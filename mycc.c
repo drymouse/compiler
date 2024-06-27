@@ -185,20 +185,20 @@ void generate(Node *node) {
     generate(node->rhs);
 
     printf("\tpop rax\n");
-    printf("\tpop rdx\n");
+    printf("\tpop rdi\n");
     switch (node->kind) {
         case ND_ADD:
-            printf("\tadd rax, rdx\n");
+            printf("\tadd rax, rdi\n");
             break;
         case ND_SUB:
-            printf("\tsub rax, rdx\n");
+            printf("\tsub rax, rdi\n");
             break;
         case ND_MUL:
-            printf("\timul rax, rdx\n");
+            printf("\timul rax, rdi\n");
             break;
         case ND_DIV:
             printf("\tcqo\n");
-            printf("\tidiv rdx\n");
+            printf("\tidiv rdi\n");
             break;
     }
     printf("\tpush rax\n");
