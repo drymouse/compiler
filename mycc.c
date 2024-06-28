@@ -39,6 +39,7 @@ struct Node {
 Node *expr();
 Node *mul();
 Node *primary();
+Node *unary();
 
 Token *token;
 char *user_input;
@@ -152,17 +153,27 @@ Node *expr() {
 }
 
 Node *mul() {
-    Node *node = primary();
+    Node *node = unary();
 
     for (;;) {
         if (consume('*')) {
-            node = new_node(ND_MUL, node, primary());
+            node = new_node(ND_MUL, node, unary());
         } else if (consume('/')) {
-            node = new_node(ND_DIV, node, primary());
+            node = new_node(ND_DIV, node, unary());
         } else {
             return node;
         }
     }
+}
+
+Node *unary() {
+    if (consume('+')) {
+        return primary();
+    }
+    if (consume('-')) {
+        return new_node(ND_SUB, new_node_num(0), primary());
+    }
+    return primary();
 }
 
 Node *primary() {
@@ -184,8 +195,8 @@ void generate(Node *node) {
     generate(node->lhs);
     generate(node->rhs);
 
-    printf("\tpop rax\n");
     printf("\tpop rdi\n");
+    printf("\tpop rax\n");
     switch (node->kind) {
         case ND_ADD:
             printf("\tadd rax, rdi\n");

@@ -3,3 +3,5 @@ pro
 *.s
 tmp*
 test*
+peda*
+.*
