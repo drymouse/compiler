@@ -1,5 +1,9 @@
 #include "mycc.h"
 
+Token *token;
+char *user_input;
+int is_debugging;
+
 int main(int argc, char **argv) {
     if (argc < 2) {
         fprintf(stderr, "Invalid arguments\n");

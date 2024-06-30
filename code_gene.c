@@ -48,3 +48,25 @@ void generate(Node *node) {
     printf("\tpush rax\n");
 
 }
+
+void tk_output(Token *tok) {
+    while (tok) {
+        if (tok->kind == TK_NUM) {
+            printf("(%d) ", tok->val);
+        } else {
+            printf("(%.*s) ", tok->len, tok->str);
+        }
+        tok = tok->next;
+    }
+    printf("\n");
+}
+
+void nd_output(Node *node, int depth) {
+    if (node->kind == ND_NUM) {
+        printf("%*sNumber: %d\n", depth, "", node->val);
+    } else {
+        printf("%*s%d\n", depth, "", node->kind);
+        nd_output(node->lhs, depth + 1);
+        nd_output(node->rhs, depth + 1);
+    }
+}

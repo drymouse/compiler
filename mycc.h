@@ -5,10 +5,9 @@
 #include <ctype.h>
 #include <string.h>
 
-#define STR(var) #var
-
 typedef enum {
     TK_RESERVED,
+    TK_IDENT,
     TK_NUM,
     TK_EOF,
 } TokenKind;
@@ -43,6 +42,10 @@ struct Node {
     int val;
 };
 
+void error_at(char *loc, char *fmt, ...);
+Token *tokenize(char *p);
+
+
 Node *expr();
 Node *equality();
 Node *relational();
@@ -51,6 +54,10 @@ Node *mul();
 Node *primary();
 Node *unary();
 
-Token *token;
-char *user_input;
-int is_debugging;
+void generate(Node *node);
+void tk_output(Token *tok);
+void nd_output(Node *node, int depth);
+
+extern Token *token;
+extern char *user_input;
+extern int is_debugging;

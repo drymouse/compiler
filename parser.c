@@ -99,7 +99,7 @@ Token *tokenize(char *p) {
             continue;
         }
 
-        error_at(token->str, "Tokenize failed...");
+        error_at(p, "Tokenize failed...");
     }
     new_token(TK_EOF, cur, p, 1);
     return head.next;
