@@ -5,6 +5,7 @@ Node *code[100];
 Lvar *locals;
 char *user_input;
 int is_debugging;
+int num_ctrl;
 
 int main(int argc, char **argv) {
     if (argc < 2) {

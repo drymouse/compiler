@@ -25,35 +25,40 @@ void generate(Node *node) {
             generate(node->lhs);
             printf("\tpop rax\n");
             printf("\tcmp rax, 0\n");
-            printf("\tje .Lend0\n");
+            printf("\tje .Lelse%d\n", node->id);
             generate(node->rhs);
             printf("\tpop rax\n");
-            printf(".Lend0:\n");
+            printf(".Lelse%d:\n", node->id);
+            if (node->third) {
+                generate(node->third);
+                printf("\tpop rax\n");
+            }
+            printf(".Lend%d:\n", node->id);
             return;
         case ND_WHL:
-            printf(".Lbegin0:\n");
+            printf(".Lbegin%d:\n", node->id);
             generate(node->lhs);
             printf("\tpop rax\n");
             printf("\tcmp rax, 0\n");
-            printf("\tje .Lend0\n");
+            printf("\tje .Lend%d\n", node->id);
             generate(node->rhs);
             printf("\tpop rax\n");
-            printf("\tjmp .Lbegin0\n");
-            printf(".Lend0:\n");
+            printf("\tjmp .Lbegin%d\n", node->id);
+            printf(".Lend%d:\n", node->id);
             return;
         case ND_FOR:
             (node->lhs) ? generate(node->lhs) : 0;
-            printf(".Lbegin0:\n");
+            printf(".Lbegin%d:\n", node->id);
             (node->rhs) ? generate(node->rhs) : 0;
             printf("\tpop rax\n");
             printf("\tcmp rax, 0\n");
-            printf("\tje .Lend0\n");
+            printf("\tje .Lend%d\n", node->id);
             generate(node->forth);
             printf("\tpop rax\n");
             generate(node->third);
             printf("\tpop rax\n");
-            printf("\tjmp .Lbegin0\n");
-            printf(".Lend0:\n");
+            printf("\tjmp .Lbegin%d\n", node->id);
+            printf(".Lend%d:\n", node->id);
             return;
         default:
             generate(node->lhs);

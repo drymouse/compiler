@@ -56,6 +56,7 @@ struct Node {
     Node *forth;
     int val;
     int offset;
+    int id; // if / while / for
 };
 
 struct Lvar {
@@ -91,3 +92,4 @@ extern Node *code[100];
 extern Lvar *locals;
 extern char *user_input;
 extern int is_debugging;
+extern int num_ctrl; // the number of if / while / for

@@ -210,6 +210,8 @@ Node *stmt() {
             token = token->next;
             node = calloc(1, sizeof(Node));
             node->kind = ND_IF_;
+            node->id = num_ctrl;
+            num_ctrl++;
             expect("(");
             node->lhs = expr();
             expect(")");
@@ -222,6 +224,8 @@ Node *stmt() {
             token = token->next;
             node = calloc(1, sizeof(Node));
             node->kind = ND_WHL;
+            node->id = num_ctrl;
+            num_ctrl++;
             expect("(");
             node->lhs = expr();
             expect(")");
@@ -231,6 +235,8 @@ Node *stmt() {
             token = token->next;
             node = calloc(1, sizeof(Node));
             node->kind = ND_FOR;
+            node->id = num_ctrl;
+            num_ctrl++;
             expect("(");
             if (consume(";")) {
                 node->lhs = NULL;
