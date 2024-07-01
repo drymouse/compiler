@@ -2,6 +2,7 @@
 
 Token *token;
 Node *code[100];
+Lvar *locals;
 char *user_input;
 int is_debugging;
 
@@ -18,11 +19,15 @@ int main(int argc, char **argv) {
     user_input = argv[1];
     token = tokenize(user_input);
     if (is_debugging) {
+        printf("locals is %s.\n", (!locals) ? "NULL" : "not NULL");
         tk_output(token);
     }
     program();
     if (is_debugging) {
-        nd_output(code[0], 0);
+        for (int i = 0; code[i]; i++) {
+            nd_output(code[i], 0);
+        }
+        lv_output(locals);
     }
 
     printf(".intel_syntax noprefix\n");

@@ -1,7 +1,10 @@
 Makefile
 pro
 *.s
+*.o
 tmp*
 test*
 peda*
 .*
+comp*
+example*

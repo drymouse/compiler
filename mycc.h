@@ -8,6 +8,11 @@
 typedef enum {
     TK_RESERVED,
     TK_IDENT,
+    TK_RETURN,
+    TK_IF,
+    TK_ELSE,
+    TK_WHILE,
+    TK_FOR,
     TK_NUM,
     TK_EOF,
 } TokenKind;
@@ -23,11 +28,17 @@ typedef enum {
     ND_GTE, // GREATER EQUAL
     ND_ASN, // assign
     ND_LCV, // local variable
+    ND_RET,
+    ND_IF_,
+    ND_ELS,
+    ND_WHL,
+    ND_FOR,
     ND_NUM,
 } NodeKind;
 
 typedef struct Token Token;
 typedef struct Node Node;
+typedef struct Lvar Lvar;
 
 struct Token {
     TokenKind kind;
@@ -39,9 +50,18 @@ struct Token {
 
 struct Node {
     NodeKind kind;
-    Node *lhs;
-    Node *rhs;
+    Node *lhs; // first
+    Node *rhs; // second
+    Node *third;
+    Node *forth;
     int val;
+    int offset;
+};
+
+struct Lvar {
+    Lvar *next;
+    char *name;
+    int len;
     int offset;
 };
 
@@ -64,8 +84,10 @@ void gen_lcv(Node *node);
 void generate(Node *node);
 void tk_output(Token *tok);
 void nd_output(Node *node, int depth);
+void lv_output(Lvar *loc);
 
 extern Token *token;
+extern Node *code[100];
+extern Lvar *locals;
 extern char *user_input;
 extern int is_debugging;
-extern Node *code[100];

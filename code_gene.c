@@ -15,6 +15,21 @@ void generate(Node *node) {
             gen_lcv(node->lhs);
             generate(node->rhs);
             break;
+        case ND_RET:
+            generate(node->lhs);
+            printf("\tpop rax\n");
+            printf("\tleave\n");
+            printf("\tret\n");
+            return;
+        case ND_IF_:
+            generate(node->lhs);
+            printf("\tpop rax\n");
+            printf("\tcmp rax, 0\n");
+            printf("\tje .Lend0\n");
+            generate(node->rhs);
+            printf("\tpop rax\n");
+            printf(".Lend0:\n");
+            return;
         default:
             generate(node->lhs);
             generate(node->rhs);
@@ -92,9 +107,18 @@ void nd_output(Node *node, int depth) {
         printf("%*sNumber: %d\n", depth, "", node->val);
     } else if (node->kind == ND_LCV) {
         printf("%*sLocvar: %c\n", depth, "", node->offset / 8 + 0x60);
+    } else if (node->kind == ND_RET) {
+        printf("return ");
+        nd_output(node->lhs, 0);
     } else {
         printf("%*s%d\n", depth, "", node->kind);
         nd_output(node->lhs, depth + 1);
         nd_output(node->rhs, depth + 1);
+    }
+}
+
+void lv_output(Lvar *loc) {
+    for (Lvar *var = loc; var; var = var->next) {
+        printf("%.*s, %d, %d\n", var->len, var->name, var->len, var->offset);
     }
 }

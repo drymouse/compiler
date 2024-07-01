@@ -37,6 +37,15 @@ Token *consume_ident() {
     }
 }
 
+Lvar *find_lvar(Token *tok) {
+    for (Lvar *var = locals; var; var = var->next) {
+        if (var->len == tok->len && !strncmp(var->name, tok->str, var->len)) {
+            return var;
+        }
+    }
+    return NULL;
+}
+
 void expect(char *op) {
     if (token->kind != TK_RESERVED || token->len != strlen(op) || strncmp(token->str, op, token->len)) {
         error_at(token->str, "expected %s, but actually %s", op, token->str);
@@ -57,6 +66,13 @@ int expect_number() {
 
 bool at_eof() {
     return token->kind == TK_EOF;
+}
+
+bool is_alpnum(char c) {
+    return ('a' <= c && c <= 'z') ||
+           ('A' <= c && c <= 'Z') ||
+           ('0' <= c && c <= '9') ||
+           (c == '_');
 }
 
 Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
@@ -108,9 +124,45 @@ Token *tokenize(char *p) {
             continue;
         }
 
-        if ('a' <= *p && *p <= 'z') {
-            cur = new_token(TK_IDENT, cur, p, 1);
+        if (!strncmp(p, "return", 6) && !is_alpnum(p[6])) {
+            cur = new_token(TK_RETURN, cur, p, 6);
+            p += 6;
+            continue;
+        }
+
+        if (!strncmp(p, "if", 2) && !is_alpnum(p[2])) {
+            cur = new_token(TK_IF, cur, p, 2);
+            p += 2;
+            continue;
+        }
+
+        if (!strncmp(p, "else", 4) && !is_alpnum(p[4])) {
+            cur = new_token(TK_ELSE, cur, p, 4);
+            p += 4;
+            continue;
+        }
+
+        if (!strncmp(p, "while", 5) && !is_alpnum(p[5])) {
+            cur = new_token(TK_WHILE, cur, p, 5);
+            p += 5;
+            continue;
+        }
+
+        if (!strncmp(p, "for", 3) && !is_alpnum(p[3])) {
+            cur = new_token(TK_FOR, cur, p, 3);
+            p += 3;
+            continue;
+        }
+
+        if (('a' <= *p && *p <= 'z') || *p == '_') {
+            int len = 1;
+            char *start = p;
             p++;
+            while (('a' <= *p && *p <= 'z') || *p == '_') {
+                len++;
+                p++;
+            }
+            cur = new_token(TK_IDENT, cur, start, len);
             continue;
         }
 
@@ -136,8 +188,66 @@ void program() {
 }
 
 Node *stmt() {
-    Node *node = expr();
-    expect(";");
+    Node *node;
+    switch (token->kind) {
+        case TK_RETURN:
+            token = token->next;
+            node = calloc(1, sizeof(Node));
+            node->kind = ND_RET;
+            node->lhs = expr();
+            expect(";");
+            break;
+        case TK_IF:
+            token = token->next;
+            node = calloc(1, sizeof(Node));
+            node->kind = ND_IF_;
+            expect("(");
+            node->lhs = expr();
+            expect(")");
+            node->rhs = stmt();
+            if (consume("else")) {
+                node->third = stmt();
+            }
+            break;
+        case TK_WHILE:
+            token = token->next;
+            node = calloc(1, sizeof(Node));
+            node->kind = ND_WHL;
+            expect("(");
+            node->lhs = expr();
+            expect(")");
+            node->rhs = stmt();
+            break;
+        case TK_FOR:
+            token = token->next;
+            node = calloc(1, sizeof(Node));
+            node->kind = ND_FOR;
+            expect("(");
+            if (consume(";")) {
+                node->lhs = NULL;
+            } else {
+                node->lhs = expr();
+                expect(";");
+            }
+            if (consume(";")) {
+                node->rhs = NULL;
+            } else {
+                node->rhs = expr();
+                expect(";");
+            }
+            if (consume(")")) {
+                node->lhs = NULL;
+            } else {
+                node->lhs = expr();
+                expect(")");
+            }
+            node->forth = stmt();
+            break;
+
+        default:
+            node = expr();
+            expect(";");
+    }
     return node;
 }
 
@@ -233,7 +343,19 @@ Node *primary() {
     } else if (tok = consume_ident()) {
         Node *node = calloc(1, sizeof(Node));
         node->kind = ND_LCV;
-        node->offset = (tok->str[0] - 'a' + 1) * 8;
+
+        Lvar *lvar = find_lvar(tok);
+        if (lvar) {
+            node->offset = lvar->offset;
+        } else {
+            Lvar *new_lvar = calloc(1, sizeof(Lvar));
+            new_lvar->next = locals;
+            new_lvar->name = tok->str;
+            new_lvar->len = tok->len;
+            new_lvar->offset = (locals) ? locals->offset + 8 : 8;
+            locals = new_lvar;
+            node->offset = new_lvar->offset;
+        }
         return node;
     } else {
         Node *node = new_node_num(expect_number());
