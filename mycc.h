@@ -21,6 +21,8 @@ typedef enum {
     ND_NEQ, // NOT EQUAL
     ND_GTR, // GREATER
     ND_GTE, // GREATER EQUAL
+    ND_ASN, // assign
+    ND_LCV, // local variable
     ND_NUM,
 } NodeKind;
 
@@ -40,13 +42,17 @@ struct Node {
     Node *lhs;
     Node *rhs;
     int val;
+    int offset;
 };
 
+void error(char *msg);
 void error_at(char *loc, char *fmt, ...);
 Token *tokenize(char *p);
 
-
+void program();
+Node *stmt();
 Node *expr();
+Node *assign();
 Node *equality();
 Node *relational();
 Node *add();
@@ -54,6 +60,7 @@ Node *mul();
 Node *primary();
 Node *unary();
 
+void gen_lcv(Node *node);
 void generate(Node *node);
 void tk_output(Token *tok);
 void nd_output(Node *node, int depth);
@@ -61,3 +68,4 @@ void nd_output(Node *node, int depth);
 extern Token *token;
 extern char *user_input;
 extern int is_debugging;
+extern Node *code[100];

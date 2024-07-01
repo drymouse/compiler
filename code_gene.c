@@ -1,12 +1,25 @@
 #include "mycc.h"
 
 void generate(Node *node) {
-    if (node->kind == ND_NUM) {
-        printf("\tpush %d\n", node->val);
-        return;
+    switch (node->kind) {
+        case ND_NUM:
+            printf("\tpush %d\n", node->val);
+            return;
+        case ND_LCV:
+            gen_lcv(node);
+            printf("\tpop rax\n");
+            printf("\tmov rax, [rax]\n");
+            printf("\tpush rax\n");
+            return;
+        case ND_ASN:
+            gen_lcv(node->lhs);
+            generate(node->rhs);
+            break;
+        default:
+            generate(node->lhs);
+            generate(node->rhs);
+            break;
     }
-    generate(node->lhs);
-    generate(node->rhs);
 
     printf("\tpop rdi\n");
     printf("\tpop rax\n");
@@ -44,9 +57,22 @@ void generate(Node *node) {
             printf("\tsetge al\n");
             printf("\tmovzb rax, al\n");
             break;
+        case ND_ASN:
+            printf("\tmov [rax], rdi\n");
+            printf("\tmov rax, rdi\n");
+            break;
     }
     printf("\tpush rax\n");
 
+}
+
+void gen_lcv(Node *node) {
+    if (node->kind != ND_LCV) {
+        error("Invalid assignment");
+    }
+    printf("\tmov rax, rbp\n");
+    printf("\tsub rax, %d\n", node->offset);
+    printf("\tpush rax\n");
 }
 
 void tk_output(Token *tok) {
@@ -64,6 +90,8 @@ void tk_output(Token *tok) {
 void nd_output(Node *node, int depth) {
     if (node->kind == ND_NUM) {
         printf("%*sNumber: %d\n", depth, "", node->val);
+    } else if (node->kind == ND_LCV) {
+        printf("%*sLocvar: %c\n", depth, "", node->offset / 8 + 0x60);
     } else {
         printf("%*s%d\n", depth, "", node->kind);
         nd_output(node->lhs, depth + 1);

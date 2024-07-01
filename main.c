@@ -1,6 +1,7 @@
 #include "mycc.h"
 
 Token *token;
+Node *code[100];
 char *user_input;
 int is_debugging;
 
@@ -19,16 +20,25 @@ int main(int argc, char **argv) {
     if (is_debugging) {
         tk_output(token);
     }
-    Node *node = expr();
+    program();
     if (is_debugging) {
-        nd_output(node, 0);
+        nd_output(code[0], 0);
     }
 
     printf(".intel_syntax noprefix\n");
     printf(".globl main\n");
     printf("main:\n");
-    generate(node);
-    printf("\tpop rax\n");
+    // prolog
+    printf("\tpush rbp\n");
+    printf("\tmov rbp, rsp\n");
+    printf("\tsub rsp, 0x130\n");
+    // main body
+    for (int i = 0; code[i]; i++) {
+        generate(code[i]);
+        printf("\tpop rax\n");
+    }
+    // epilog
+    printf("\tleave\n");
     printf("\tret\n");
     return 0;
 }

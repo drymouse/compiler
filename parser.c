@@ -1,5 +1,9 @@
 #include "mycc.h"
 
+void error(char *msg) {
+    printf("%s\n", msg);
+}
+
 void error_at(char *loc, char *fmt, ...) {
     if (is_debugging) {
         printf("error\n");
@@ -23,9 +27,19 @@ bool consume(char *op) {
     }
 }
 
+Token *consume_ident() {
+    if (token->kind == TK_IDENT) {
+        Token *var = token;
+        token = token->next;
+        return var;
+    } else {
+        return NULL;
+    }
+}
+
 void expect(char *op) {
     if (token->kind != TK_RESERVED || token->len != strlen(op) || strncmp(token->str, op, token->len)) {
-        error_at(token->str, "expected %c, but actually %c", op, token->str[0]);
+        error_at(token->str, "expected %s, but actually %s", op, token->str);
     } else {
         token = token->next;
     }
@@ -87,8 +101,15 @@ Token *tokenize(char *p) {
             continue;
         }
 
-        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == '>' || *p == '<') {
+        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == '>' || *p == '<'
+            || *p == '=' || *p == ';') {
             cur = new_token(TK_RESERVED, cur, p, 1);
+            p++;
+            continue;
+        }
+
+        if ('a' <= *p && *p <= 'z') {
+            cur = new_token(TK_IDENT, cur, p, 1);
             p++;
             continue;
         }
@@ -105,8 +126,32 @@ Token *tokenize(char *p) {
     return head.next;
 }
 
+void program() {
+    int i = 0;
+    while (!at_eof()) {
+        code[i] = stmt();
+        i++;
+    }
+    code[i] = NULL;
+}
+
+Node *stmt() {
+    Node *node = expr();
+    expect(";");
+    return node;
+}
+
 Node *expr() {
-    return equality();
+    return assign();
+}
+
+Node *assign() {
+    Node *node = equality();
+
+    if (consume("=")) {
+        node = new_node(ND_ASN, node, assign());
+    }
+    return node;
 }
 
 Node *equality() {
@@ -180,9 +225,15 @@ Node *unary() {
 }
 
 Node *primary() {
+    Token *tok;
     if (consume("(")) {
         Node *node = expr();
         expect(")");
+        return node;
+    } else if (tok = consume_ident()) {
+        Node *node = calloc(1, sizeof(Node));
+        node->kind = ND_LCV;
+        node->offset = (tok->str[0] - 'a' + 1) * 8;
         return node;
     } else {
         Node *node = new_node_num(expect_number());
