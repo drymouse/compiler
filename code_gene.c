@@ -30,6 +30,31 @@ void generate(Node *node) {
             printf("\tpop rax\n");
             printf(".Lend0:\n");
             return;
+        case ND_WHL:
+            printf(".Lbegin0:\n");
+            generate(node->lhs);
+            printf("\tpop rax\n");
+            printf("\tcmp rax, 0\n");
+            printf("\tje .Lend0\n");
+            generate(node->rhs);
+            printf("\tpop rax\n");
+            printf("\tjmp .Lbegin0\n");
+            printf(".Lend0:\n");
+            return;
+        case ND_FOR:
+            (node->lhs) ? generate(node->lhs) : 0;
+            printf(".Lbegin0:\n");
+            (node->rhs) ? generate(node->rhs) : 0;
+            printf("\tpop rax\n");
+            printf("\tcmp rax, 0\n");
+            printf("\tje .Lend0\n");
+            generate(node->forth);
+            printf("\tpop rax\n");
+            generate(node->third);
+            printf("\tpop rax\n");
+            printf("\tjmp .Lbegin0\n");
+            printf(".Lend0:\n");
+            return;
         default:
             generate(node->lhs);
             generate(node->rhs);
@@ -108,12 +133,14 @@ void nd_output(Node *node, int depth) {
     } else if (node->kind == ND_LCV) {
         printf("%*sLocvar: %c\n", depth, "", node->offset / 8 + 0x60);
     } else if (node->kind == ND_RET) {
-        printf("return ");
+        printf("%*sreturn ", depth, "");
         nd_output(node->lhs, 0);
     } else {
         printf("%*s%d\n", depth, "", node->kind);
         nd_output(node->lhs, depth + 1);
         nd_output(node->rhs, depth + 1);
+        (node->third) ? nd_output(node->third, depth + 1) : 0;
+        (node->forth) ? nd_output(node->forth, depth + 1) : 0;
     }
 }
 

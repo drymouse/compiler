@@ -37,6 +37,15 @@ Token *consume_ident() {
     }
 }
 
+bool consume_type(TokenKind kind) {
+    if (token->kind != kind) {
+        return false;
+    } else {
+        token = token->next;
+        return true;
+    }
+}
+
 Lvar *find_lvar(Token *tok) {
     for (Lvar *var = locals; var; var = var->next) {
         if (var->len == tok->len && !strncmp(var->name, tok->str, var->len)) {
@@ -205,7 +214,7 @@ Node *stmt() {
             node->lhs = expr();
             expect(")");
             node->rhs = stmt();
-            if (consume("else")) {
+            if (consume_type(TK_ELSE)) {
                 node->third = stmt();
             }
             break;
@@ -236,9 +245,9 @@ Node *stmt() {
                 expect(";");
             }
             if (consume(")")) {
-                node->lhs = NULL;
+                node->third = NULL;
             } else {
-                node->lhs = expr();
+                node->third = expr();
                 expect(")");
             }
             node->forth = stmt();
