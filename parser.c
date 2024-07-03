@@ -127,7 +127,7 @@ Token *tokenize(char *p) {
         }
 
         if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == '>' || *p == '<'
-            || *p == '=' || *p == ';') {
+            || *p == '=' || *p == ';' || *p == '{' || *p == '}') {
             cur = new_token(TK_RESERVED, cur, p, 1);
             p++;
             continue;
@@ -260,8 +260,19 @@ Node *stmt() {
             break;
 
         default:
-            node = expr();
-            expect(";");
+            if (consume("{")) {
+                node = calloc(1, sizeof(Node));
+                node->kind = ND_BLC;
+                Node *last = node;
+                while (!consume("}")) {
+                    last->next = stmt();
+                    last = last->next;
+                }
+                last->next = NULL;
+            } else {
+                node = expr();
+                expect(";");
+            }
     }
     return node;
 }
@@ -356,6 +367,14 @@ Node *primary() {
         expect(")");
         return node;
     } else if (tok = consume_ident()) {
+        if (consume("(")) {
+            Node *node = calloc(1, sizeof(Node));
+            node->kind = ND_FNC;
+            // node->lhs = tok->str;
+            // node->rhs = tok->len;
+            expect(")");
+            return node;
+        }
         Node *node = calloc(1, sizeof(Node));
         node->kind = ND_LCV;
 

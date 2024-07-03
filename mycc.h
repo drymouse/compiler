@@ -28,12 +28,14 @@ typedef enum {
     ND_GTE, // GREATER EQUAL
     ND_ASN, // assign
     ND_LCV, // local variable
-    ND_RET,
-    ND_IF_,
-    ND_ELS,
-    ND_WHL,
-    ND_FOR,
-    ND_NUM,
+    ND_RET, // return
+    ND_IF_, // if
+    ND_ELS, // else
+    ND_WHL, // while
+    ND_FOR, // for
+    ND_BLC, // block
+    ND_NUM, // number
+    ND_FNC, // function
 } NodeKind;
 
 typedef struct Token Token;
@@ -57,6 +59,7 @@ struct Node {
     int val;
     int offset;
     int id; // if / while / for
+    Node *next; // for block
 };
 
 struct Lvar {

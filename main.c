@@ -37,7 +37,9 @@ int main(int argc, char **argv) {
     // prolog
     printf("\tpush rbp\n");
     printf("\tmov rbp, rsp\n");
-    printf("\tsub rsp, 0x130\n");
+    if (locals && locals->offset) {
+        printf("\tsub rsp, 0x%x\n", locals->offset);
+    }
     // main body
     for (int i = 0; code[i]; i++) {
         generate(code[i]);

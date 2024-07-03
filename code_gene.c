@@ -34,6 +34,7 @@ void generate(Node *node) {
                 printf("\tpop rax\n");
             }
             printf(".Lend%d:\n", node->id);
+            printf("\tpush rax\n");
             return;
         case ND_WHL:
             printf(".Lbegin%d:\n", node->id);
@@ -45,20 +46,40 @@ void generate(Node *node) {
             printf("\tpop rax\n");
             printf("\tjmp .Lbegin%d\n", node->id);
             printf(".Lend%d:\n", node->id);
+            printf("\tpush rax\n");
             return;
         case ND_FOR:
-            (node->lhs) ? generate(node->lhs) : 0;
+            if (node->lhs) {
+                generate(node->lhs);
+                printf("\tpop rax\n");
+            }
             printf(".Lbegin%d:\n", node->id);
-            (node->rhs) ? generate(node->rhs) : 0;
-            printf("\tpop rax\n");
-            printf("\tcmp rax, 0\n");
-            printf("\tje .Lend%d\n", node->id);
+            if (node->rhs) {
+                generate(node->rhs);
+                printf("\tpop rax\n");
+                printf("\tcmp rax, 0\n");
+                printf("\tje .Lend%d\n", node->id);
+            }
             generate(node->forth);
             printf("\tpop rax\n");
-            generate(node->third);
-            printf("\tpop rax\n");
+            if (node->third) {
+                generate(node->third);
+                printf("\tpop rax\n");
+            }
             printf("\tjmp .Lbegin%d\n", node->id);
             printf(".Lend%d:\n", node->id);
+            printf("\tpush rax\n");
+            return;
+        case ND_BLC:
+            while (node->next) {
+                generate(node->next);
+                printf("\tpop rax\n");
+                node = node->next;
+            }
+            printf("\tpush rax\n");
+            return;
+        case ND_FNC:
+            printf("\tcall %s\n", "foo");
             return;
         default:
             generate(node->lhs);
@@ -140,6 +161,12 @@ void nd_output(Node *node, int depth) {
     } else if (node->kind == ND_RET) {
         printf("%*sreturn ", depth, "");
         nd_output(node->lhs, 0);
+    } else if (node->kind == ND_BLC) {
+        printf("%*s%d\n", depth, "", node->kind);
+        while (node->next) {
+            nd_output(node->next, depth + 1);
+            node = node->next;
+        }
     } else {
         printf("%*s%d\n", depth, "", node->kind);
         nd_output(node->lhs, depth + 1);
