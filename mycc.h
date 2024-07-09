@@ -36,11 +36,15 @@ typedef enum {
     ND_BLC, // block
     ND_NUM, // number
     ND_FNC, // function
+    ND_DEF, // definition of function
 } NodeKind;
 
 typedef struct Token Token;
 typedef struct Node Node;
 typedef struct Lvar Lvar;
+typedef struct Fcall Fcall;
+typedef struct Farg Farg;
+typedef struct Fdef Fdef;
 
 struct Token {
     TokenKind kind;
@@ -59,7 +63,9 @@ struct Node {
     int val;
     int offset;
     int id; // if / while / for
-    Node *next; // for block
+    Node *next; // for block and fcall
+    Fcall *fcall; // function call
+    Fdef *fdef; // function definition
 };
 
 struct Lvar {
@@ -69,11 +75,31 @@ struct Lvar {
     int offset;
 };
 
+struct Fcall {
+    char *name;
+    int arglen;
+    Node *args;
+};
+
+struct Farg {
+    Farg *next;
+    int val;
+};
+
+struct Fdef {
+    char *name;
+    int arglen;
+    Lvar *lvar;
+    int loclen;
+    int stack_height;
+};
+
 void error(char *msg);
 void error_at(char *loc, char *fmt, ...);
 Token *tokenize(char *p);
 
 void program();
+Node *definition();
 Node *stmt();
 Node *expr();
 Node *assign();
@@ -90,9 +116,16 @@ void tk_output(Token *tok);
 void nd_output(Node *node, int depth);
 void lv_output(Lvar *loc);
 
+void push_reg(char *reg);
+void push_val(int val);
+void pop(char *reg);
+void add_rsp(int val);
+void sub_rsp(int val);
+
 extern Token *token;
 extern Node *code[100];
 extern Lvar *locals;
 extern char *user_input;
 extern int is_debugging;
 extern int num_ctrl; // the number of if / while / for
+extern int stack_height; // rsp - rbp

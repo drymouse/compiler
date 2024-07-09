@@ -73,6 +73,16 @@ int expect_number() {
     }
 }
 
+Token *expect_ident() {
+    if (token->kind != TK_IDENT) {
+        error_at(token->str, "not a identifier");
+    } else {
+        Token *val = token;
+        token = token->next;
+        return val;
+    }
+}
+
 bool at_eof() {
     return token->kind == TK_EOF;
 }
@@ -127,7 +137,7 @@ Token *tokenize(char *p) {
         }
 
         if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == '>' || *p == '<'
-            || *p == '=' || *p == ';' || *p == '{' || *p == '}') {
+            || *p == '=' || *p == ';' || *p == '{' || *p == '}' || *p == ',') {
             cur = new_token(TK_RESERVED, cur, p, 1);
             p++;
             continue;
@@ -163,11 +173,13 @@ Token *tokenize(char *p) {
             continue;
         }
 
-        if (('a' <= *p && *p <= 'z') || *p == '_') {
+        if (('a' <= *p && *p <= 'z') 
+         || ('A' <= *p && *p <= 'Z') 
+         || *p == '_') {
             int len = 1;
             char *start = p;
             p++;
-            while (('a' <= *p && *p <= 'z') || *p == '_') {
+            while (is_alpnum(*p)) {
                 len++;
                 p++;
             }
@@ -187,13 +199,56 @@ Token *tokenize(char *p) {
     return head.next;
 }
 
+char *make_string(char *source, int len) {
+    char *strings = calloc(1, len + 1);
+    memcpy(strings, source, len);
+    *(strings+len) = 0;
+    return strings;
+}
+
 void program() {
     int i = 0;
     while (!at_eof()) {
-        code[i] = stmt();
+        code[i] = definition();
         i++;
     }
     code[i] = NULL;
+}
+
+Node *definition() {
+    Node *node = calloc(1, sizeof(Node));
+    Fdef *fdef = calloc(1, sizeof(Fdef));
+    node->kind = ND_DEF;
+    int arglen = 0;
+    Token *tok = expect_ident();
+    fdef->name = make_string(tok->str, tok->len);
+    expect("(");
+    for (arglen = 0; !consume(")"); arglen++) {
+        if (arglen) {
+            expect(",");
+        }
+        Token *argtok = expect_ident();
+        Lvar *arg = calloc(1, sizeof(Node));
+        arg->name = argtok->str;
+        arg->len = argtok->len;
+        arg->offset = (fdef->lvar) ? fdef->lvar->offset + 8 : 8;
+        arg->next = fdef->lvar;
+        fdef->lvar = arg;
+    }
+    expect("{");
+    locals = fdef->lvar;
+    Node *last = node;
+    while (!consume("}")) {
+        Node *tmp = stmt();
+        last->next = tmp;
+        last = tmp;
+    }
+    
+    fdef->lvar = locals;
+    fdef->arglen = arglen;
+    fdef->loclen = (fdef->lvar) ? fdef->lvar->offset / 8 : 0;
+    node->fdef = fdef;
+    return node;
 }
 
 Node *stmt() {
@@ -369,10 +424,23 @@ Node *primary() {
     } else if (tok = consume_ident()) {
         if (consume("(")) {
             Node *node = calloc(1, sizeof(Node));
+            Fcall *fcall = calloc(1, sizeof(Fcall));
             node->kind = ND_FNC;
             // node->lhs = tok->str;
             // node->rhs = tok->len;
-            expect(")");
+            int len;
+            Node *arg = NULL;
+            for (len = 0; !consume(")"); len++) {
+                if (len) expect(",");
+                Node *tmp = expr();
+                tmp->next = arg; // NULL <- arg1 <- arg2 <- arg3
+                arg = tmp;
+            }
+            fcall->arglen = len;
+            fcall->args = arg;
+            fcall->name = make_string(tok->str, tok->len);
+            (is_debugging) ? printf("fcall: %s\n" ,fcall->name) : 0;
+            node->fcall = fcall;
             return node;
         }
         Node *node = calloc(1, sizeof(Node));
