@@ -175,6 +175,17 @@ void generate(Node *node) {
             printf("\tleave\n");
             printf("\tret\n");
             return;
+        case ND_ADR:
+            gen_lcv(node->lhs);
+            return;
+        case ND_DRF:
+            generate(node->lhs);
+            pop("rax");
+            printf("\tmov rax, [rax]\n");
+            push_reg("rax");
+            return;
+        case ND_PAS:
+            return;
         default:
             generate(node->lhs);
             generate(node->rhs);

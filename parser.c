@@ -10,9 +10,28 @@ void error_at(char *loc, char *fmt, ...) {
     }
     va_list ap;
     va_start(ap, fmt);
-    int pos = loc - user_input;
-    fprintf(stderr, "%s\n", user_input);
-    fprintf(stderr, "%*s^ ", pos, " ");
+    char *line_begin = user_input;
+    char *line_end = user_input + strlen(user_input);
+    int line = 1;
+    bool met_loc = false;
+    for (char *cur = user_input; ; cur++) {
+        if (cur == loc) {
+            met_loc = true;
+        }
+        if (*cur == '\n') {
+            if (met_loc) {
+                line_end = cur - 1;
+                break;
+            }
+            line_begin = cur + 1;
+            line++;
+        }
+    }
+    int pos = loc - line_begin;
+    int mojisuu;
+    fprintf(stderr, "line %d: %n", line, &mojisuu);
+    fprintf(stderr, "%.*s\n", (int)(line_end - line_begin), line_begin);
+    fprintf(stderr, "%*s^ ", pos + mojisuu, " ");
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
     exit(1);
@@ -83,6 +102,14 @@ Token *expect_ident() {
     }
 }
 
+void expect_type() {
+    if (token->kind != TK_TYPE) {
+        error_at(token->str, "not a type");
+    } else {
+        token = token->next;
+    }
+}
+
 bool at_eof() {
     return token->kind == TK_EOF;
 }
@@ -137,7 +164,7 @@ Token *tokenize(char *p) {
         }
 
         if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == '>' || *p == '<'
-            || *p == '=' || *p == ';' || *p == '{' || *p == '}' || *p == ',') {
+            || *p == '=' || *p == ';' || *p == '{' || *p == '}' || *p == ',' || *p == '*' || *p == '&') {
             cur = new_token(TK_RESERVED, cur, p, 1);
             p++;
             continue;
@@ -169,6 +196,12 @@ Token *tokenize(char *p) {
 
         if (!strncmp(p, "for", 3) && !is_alpnum(p[3])) {
             cur = new_token(TK_FOR, cur, p, 3);
+            p += 3;
+            continue;
+        }
+
+        if (!strncmp(p, "int", 3) && !is_alpnum(p[3])) {
+            cur = new_token(TK_TYPE, cur, p, 3);
             p += 3;
             continue;
         }
@@ -220,6 +253,7 @@ Node *definition() {
     Fdef *fdef = calloc(1, sizeof(Fdef));
     node->kind = ND_DEF;
     int arglen = 0;
+    expect_type();
     Token *tok = expect_ident();
     fdef->name = make_string(tok->str, tok->len);
     expect("(");
@@ -227,6 +261,7 @@ Node *definition() {
         if (arglen) {
             expect(",");
         }
+        expect_type();
         Token *argtok = expect_ident();
         Lvar *arg = calloc(1, sizeof(Node));
         arg->name = argtok->str;
@@ -313,7 +348,25 @@ Node *stmt() {
             }
             node->forth = stmt();
             break;
-
+        case TK_TYPE:
+            token = token->next;
+            Token *tok = expect_ident();
+            Lvar *lvar = find_lvar(tok);
+            node = calloc(1, sizeof(Node));
+            node->kind = ND_LCV;
+            if (lvar) {
+                node->offset = lvar->offset;
+            } else {
+                Lvar *new_lvar = calloc(1, sizeof(Lvar));
+                new_lvar->next = locals;
+                new_lvar->name = tok->str;
+                new_lvar->len = tok->len;
+                new_lvar->offset = (locals) ? locals->offset + 8 : 8;
+                locals = new_lvar;
+                node->offset = new_lvar->offset;
+            }
+            expect(";");
+            break;
         default:
             if (consume("{")) {
                 node = calloc(1, sizeof(Node));
@@ -412,6 +465,12 @@ Node *unary() {
     if (consume("-")) {
         return new_node(ND_SUB, new_node_num(0), primary());
     }
+    if (consume("*")) {
+        return new_node(ND_DRF, unary(), NULL);
+    }
+    if (consume("&")) {
+        return new_node(ND_ADR, unary(), NULL);
+    }
     return primary();
 }
 
@@ -450,6 +509,8 @@ Node *primary() {
         if (lvar) {
             node->offset = lvar->offset;
         } else {
+            error_at(tok->str, "%.*s: Not a defined variable", tok->len, tok->str);
+            /*
             Lvar *new_lvar = calloc(1, sizeof(Lvar));
             new_lvar->next = locals;
             new_lvar->name = tok->str;
@@ -457,6 +518,7 @@ Node *primary() {
             new_lvar->offset = (locals) ? locals->offset + 8 : 8;
             locals = new_lvar;
             node->offset = new_lvar->offset;
+            */
         }
         return node;
     } else {

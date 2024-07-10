@@ -13,6 +13,7 @@ typedef enum {
     TK_ELSE,
     TK_WHILE,
     TK_FOR,
+    TK_TYPE,
     TK_NUM,
     TK_EOF,
 } TokenKind;
@@ -37,6 +38,10 @@ typedef enum {
     ND_NUM, // number
     ND_FNC, // function
     ND_DEF, // definition of function
+    ND_ADR, // address
+    ND_DRF, // dereference
+    ND_INT,
+    ND_PAS, // pass
 } NodeKind;
 
 typedef struct Token Token;
