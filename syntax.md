@@ -19,5 +19,5 @@ unary      = ("+" | "-")? primary
 primary    = num 
            | ident ( "(" ( expr ("," expr)* )? ")" )? 
            | "(" expr ")"
-type       = "int" | "char"
+type       = ("int" | "char") "*"*
 ```

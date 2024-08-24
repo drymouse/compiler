@@ -238,12 +238,20 @@ void generate(Node *node) {
 }
 
 void gen_lcv(Node *node) {
-    if (node->kind != ND_LCV) {
+    if (node->kind != ND_LCV && node->kind != ND_DRF) {
         error("Invalid assignment");
     }
-    printf("\tmov rax, rbp\n");
-    printf("\tsub rax, %d\n", node->offset);
-    push_reg("rax");
+    if (node->kind == ND_LCV) {
+        printf("\tmov rax, rbp\n");
+        printf("\tsub rax, %d\n", node->offset);
+        push_reg("rax");
+    } else if (node->kind == ND_DRF) {
+        gen_lcv(node->lhs);
+        pop("rax");
+        printf("\tmov rax, [rax]\n");
+        push_reg("rax");
+    }
+    
 }
 
 void tk_output(Token *tok) {
@@ -264,8 +272,8 @@ void nd_output(Node *node, int depth) {
     } else if (node->kind == ND_LCV) {
         printf("%*sLocvar: %c\n", depth, "", node->offset / 8 + 0x60);
     } else if (node->kind == ND_RET) {
-        printf("%*sreturn ", depth, "");
-        nd_output(node->lhs, 0);
+        printf("%*sreturn\n", depth, "");
+        nd_output(node->lhs, depth+1);
     } else if (node->kind == ND_BLC) {
         printf("%*s%d\n", depth, "", node->kind);
         while (node->next) {
@@ -274,10 +282,15 @@ void nd_output(Node *node, int depth) {
         }
     } else if (node->kind == ND_FNC) {
         printf("%*s%d\n", depth, "", node->kind);
+    } else if (node->kind == ND_DEF) {
+        while (node->next) {
+            node = node->next;
+            nd_output(node, depth+1);
+        }
     } else {
         printf("%*s%d\n", depth, "", node->kind);
-        nd_output(node->lhs, depth + 1);
-        nd_output(node->rhs, depth + 1);
+        (node->lhs) ? nd_output(node->lhs, depth + 1) : 0;
+        (node->rhs) ? nd_output(node->rhs, depth + 1) : 0;
         (node->third) ? nd_output(node->third, depth + 1) : 0;
         (node->forth) ? nd_output(node->forth, depth + 1) : 0;
     }
@@ -286,5 +299,18 @@ void nd_output(Node *node, int depth) {
 void lv_output(Lvar *loc) {
     for (Lvar *var = loc; var; var = var->next) {
         printf("%.*s, %d, %d\n", var->len, var->name, var->len, var->offset);
+    }
+}
+
+void fn_output(Fdef *fdef) {
+    printf("function %s\n", fdef->name);
+    for (Lvar *lvar = fdef->lvar; lvar; lvar = lvar->next) {
+        printf("%.*s, %d, ", lvar->len, lvar->name, lvar->offset);
+        Type *typ = lvar->type;
+        while (typ->ptr_to) {
+            printf("PTR -> ");
+            typ = typ->ptr_to;
+        }
+        printf("INT\n");
     }
 }

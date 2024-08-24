@@ -253,7 +253,7 @@ Node *definition() {
     Fdef *fdef = calloc(1, sizeof(Fdef));
     node->kind = ND_DEF;
     int arglen = 0;
-    expect_type();
+    typekind();
     Token *tok = expect_ident();
     fdef->name = make_string(tok->str, tok->len);
     expect("(");
@@ -261,13 +261,14 @@ Node *definition() {
         if (arglen) {
             expect(",");
         }
-        expect_type();
+        Type *type = typekind();
         Token *argtok = expect_ident();
-        Lvar *arg = calloc(1, sizeof(Node));
+        Lvar *arg = calloc(1, sizeof(Lvar));
         arg->name = argtok->str;
         arg->len = argtok->len;
         arg->offset = (fdef->lvar) ? fdef->lvar->offset + 8 : 8;
         arg->next = fdef->lvar;
+        arg->type = type;
         fdef->lvar = arg;
     }
     expect("{");
@@ -349,7 +350,7 @@ Node *stmt() {
             node->forth = stmt();
             break;
         case TK_TYPE:
-            token = token->next;
+            Type *type = typekind();
             Token *tok = expect_ident();
             Lvar *lvar = find_lvar(tok);
             node = calloc(1, sizeof(Node));
@@ -362,6 +363,7 @@ Node *stmt() {
                 new_lvar->name = tok->str;
                 new_lvar->len = tok->len;
                 new_lvar->offset = (locals) ? locals->offset + 8 : 8;
+                new_lvar->type = type;
                 locals = new_lvar;
                 node->offset = new_lvar->offset;
             }
@@ -525,4 +527,18 @@ Node *primary() {
         Node *node = new_node_num(expect_number());
         return node;
     }
+}
+
+Type *typekind() {
+    expect_type();
+    Type *type = calloc(1, sizeof(Type));
+    type->typ = INT;
+    Type *tmp;
+    while (consume("*")) {
+        tmp = calloc(1, sizeof(Type));
+        tmp->typ = PTR;
+        tmp->ptr_to = type;
+        type = tmp;
+    }
+    return type;
 }

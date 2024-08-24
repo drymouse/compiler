@@ -50,6 +50,7 @@ typedef struct Lvar Lvar;
 typedef struct Fcall Fcall;
 typedef struct Farg Farg;
 typedef struct Fdef Fdef;
+typedef struct Type Type;
 
 struct Token {
     TokenKind kind;
@@ -78,6 +79,7 @@ struct Lvar {
     char *name;
     int len;
     int offset;
+    Type *type;
 };
 
 struct Fcall {
@@ -99,6 +101,11 @@ struct Fdef {
     int stack_height;
 };
 
+struct Type {
+    enum {INT, PTR} typ;
+    struct Type *ptr_to;
+};
+
 void error(char *msg);
 void error_at(char *loc, char *fmt, ...);
 Token *tokenize(char *p);
@@ -114,12 +121,14 @@ Node *add();
 Node *mul();
 Node *primary();
 Node *unary();
+Type *typekind();
 
 void gen_lcv(Node *node);
 void generate(Node *node);
 void tk_output(Token *tok);
 void nd_output(Node *node, int depth);
 void lv_output(Lvar *loc);
+void fn_output(Fdef *fdef);
 
 void push_reg(char *reg);
 void push_val(int val);

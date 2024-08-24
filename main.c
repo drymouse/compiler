@@ -40,9 +40,11 @@ int main(int argc, char **argv) {
     program();
     if (is_debugging) {
         for (int i = 0; code[i]; i++) {
-            //nd_output(code[i], 0);
+            nd_output(code[i], 0);
         }
-        lv_output(code[0]->fdef->lvar);
+        for (int i = 0; code[i]; i++) {
+            fn_output(code[i]->fdef);
+        }
     }
 
     printf(".intel_syntax noprefix\n");
@@ -50,10 +52,6 @@ int main(int argc, char **argv) {
     // prolog
     // main body
     for (int i = 0; code[i]; i++) {
-        if (is_debugging) {
-            Fdef *fdef = code[i]->fdef;
-            printf("name: %s, loclen: %d\n", fdef->name, fdef->arglen);
-        }
         generate(code[i]);
     }
     // epilog
